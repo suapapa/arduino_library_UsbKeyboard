@@ -112,7 +112,7 @@ PROGMEM char usbHidReportDescriptor[35] = { /* USB report descriptor */
 #define KEY_0       39
 
 #define KEY_ENTER   40
-
+#define KEY_ESC     41
 #define KEY_SPACE   44
 
 #define KEY_F1      58
