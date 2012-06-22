@@ -5,7 +5,7 @@
  * Tabsize: 4
  * Copyright: (c) 2005 by OBJECTIVE DEVELOPMENT Software GmbH
  * License: GNU GPL v2 (see License.txt), GNU GPL v3 or proprietary (CommercialLicense.txt)
- * This Revision: $Id: usbdrv.h 769 2009-08-22 11:49:05Z cs $
+ * This Revision: $Id$
  */
 
 #ifndef __usbdrv_h_included__
@@ -105,9 +105,9 @@ interrupt routine.
 Interrupt latency:
 The application must ensure that the USB interrupt is not disabled for more
 than 25 cycles (this is for 12 MHz, faster clocks allow longer latency).
-This implies that all interrupt routines must either be declared as "INTERRUPT"
-instead of "SIGNAL" (see "avr/signal.h") or that they are written in assembler
-with "sei" as the first instruction.
+This implies that all interrupt routines must either have the "ISR_NOBLOCK"
+attribute set (see "avr/interrupt.h") or be written in assembler with "sei"
+as the first instruction.
 
 Maximum interrupt duration / CPU cycle consumption:
 The driver handles all USB communication during the interrupt service
@@ -122,7 +122,7 @@ USB messages, even if they address another (low-speed) device on the same bus.
 /* --------------------------- Module Interface ---------------------------- */
 /* ------------------------------------------------------------------------- */
 
-#define USBDRV_VERSION  20090822
+#define USBDRV_VERSION  20120109
 /* This define uniquely identifies a driver version. It is a decimal number
  * constructed from the driver's release date in the form YYYYMMDD. If the
  * driver's behavior or interface changes, you can use this constant to
@@ -165,9 +165,6 @@ USB messages, even if they address another (low-speed) device on the same bus.
 
 struct usbRequest;  /* forward declaration */
 
-#ifdef __cplusplus
-extern "C"{
-#endif
 USB_PUBLIC void usbInit(void);
 /* This function must be called before interrupts are enabled and the main
  * loop is entered. We exepct that the PORT and DDR bits for D+ and D- have
@@ -181,21 +178,12 @@ USB_PUBLIC void usbPoll(void);
  * Please note that debug outputs through the UART take ~ 0.5ms per byte
  * at 19200 bps.
  */
-#ifdef __cplusplus
-} // extern "C"
-#endif
 extern uchar *usbMsgPtr;
 /* This variable may be used to pass transmit data to the driver from the
  * implementation of usbFunctionWrite(). It is also used internally by the
  * driver for standard control requests.
  */
-#ifdef __cplusplus
-extern "C"{
-#endif
 USB_PUBLIC usbMsgLen_t usbFunctionSetup(uchar data[8]);
-#ifdef __cplusplus
-} // extern "C"
-#endif
 /* This function is called when the driver receives a SETUP transaction from
  * the host which is not answered by the driver itself (in practice: class and
  * vendor requests). All control transfers start with a SETUP transaction where
@@ -229,13 +217,7 @@ USB_PUBLIC usbMsgLen_t usbFunctionDescriptor(struct usbRequest *rq);
  * data. See the documentation of usbFunctionSetup() above for more info.
  */
 #if USB_CFG_HAVE_INTRIN_ENDPOINT
-#ifdef __cplusplus
-extern "C"{
-#endif
 USB_PUBLIC void usbSetInterrupt(uchar *data, uchar len);
-#ifdef __cplusplus
-} // extern "C"
-#endif
 /* This function sets the message which will be sent during the next interrupt
  * IN transfer. The message is copied to an internal buffer and must not exceed
  * a length of 8 bytes. The message may be 0 bytes long just to indicate the
@@ -332,13 +314,7 @@ extern unsigned usbCrc16(unsigned data, uchar len);
  * data. We enforce 16 bit calling conventions for compatibility with IAR's
  * tiny memory model.
  */
-#ifdef __cplusplus
-extern "C"{
-#endif
 extern unsigned usbCrc16Append(unsigned data, uchar len);
-#ifdef __cplusplus
-} // extern "C"
-#endif
 #define usbCrc16Append(data, len)    usbCrc16Append((unsigned)(data), len)
 /* This function is equivalent to usbCrc16() above, except that it appends
  * the 2 bytes CRC (lowbyte first) in the 'data' buffer after reading 'len'
@@ -743,6 +719,7 @@ typedef struct usbRequest{
 #define USBDESCR_HID_PHYS       0x23
 
 //#define USBATTR_BUSPOWER        0x80  // USB 1.1 does not define this value any more
+#define USBATTR_BUSPOWER        0
 #define USBATTR_SELFPOWER       0x40
 #define USBATTR_REMOTEWAKE      0x20
 

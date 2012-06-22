@@ -10,7 +10,13 @@
 #include <avr/interrupt.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "usbdrv.h"
+#ifdef __cplusplus
+}
+#endif
 
 // TODO: Work around Arduino 12 issues better.
 //#include <WConstants.h>
@@ -22,36 +28,36 @@ typedef uint8_t byte;
 #define BUFFER_SIZE 4 // Minimum of 2: 1 for modifiers + 1 for keystroke 
 
 
-static uchar    idleRate;           // in 4 ms units 
+static uchar    idleRate;           // in 4 ms units
 
 
 /* We use a simplifed keyboard report descriptor which does not support the
  * boot protocol. We don't allow setting status LEDs and but we do allow
- * simultaneous key presses. 
+ * simultaneous key presses.
  * The report descriptor has been created with usb.org's "HID Descriptor Tool"
  * which can be downloaded from http://www.usb.org/developers/hidpage/.
  * Redundant entries (such as LOGICAL_MINIMUM and USAGE_PAGE) have been omitted
  * for the second INPUT item.
  */
 PROGMEM char usbHidReportDescriptor[35] = { /* USB report descriptor */
-  0x05, 0x01,                    // USAGE_PAGE (Generic Desktop) 
-  0x09, 0x06,                    // USAGE (Keyboard) 
-  0xa1, 0x01,                    // COLLECTION (Application) 
-  0x05, 0x07,                    //   USAGE_PAGE (Keyboard) 
-  0x19, 0xe0,                    //   USAGE_MINIMUM (Keyboard LeftControl) 
-  0x29, 0xe7,                    //   USAGE_MAXIMUM (Keyboard Right GUI) 
-  0x15, 0x00,                    //   LOGICAL_MINIMUM (0) 
-  0x25, 0x01,                    //   LOGICAL_MAXIMUM (1) 
-  0x75, 0x01,                    //   REPORT_SIZE (1) 
-  0x95, 0x08,                    //   REPORT_COUNT (8) 
-  0x81, 0x02,                    //   INPUT (Data,Var,Abs) 
-  0x95, BUFFER_SIZE-1,           //   REPORT_COUNT (simultaneous keystrokes) 
-  0x75, 0x08,                    //   REPORT_SIZE (8) 
-  0x25, 0x65,                    //   LOGICAL_MAXIMUM (101) 
-  0x19, 0x00,                    //   USAGE_MINIMUM (Reserved (no event indicated)) 
-  0x29, 0x65,                    //   USAGE_MAXIMUM (Keyboard Application) 
-  0x81, 0x00,                    //   INPUT (Data,Ary,Abs) 
-  0xc0                           // END_COLLECTION 
+  0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
+  0x09, 0x06,                    // USAGE (Keyboard)
+  0xa1, 0x01,                    // COLLECTION (Application)
+  0x05, 0x07,                    //   USAGE_PAGE (Keyboard)
+  0x19, 0xe0,                    //   USAGE_MINIMUM (Keyboard LeftControl)
+  0x29, 0xe7,                    //   USAGE_MAXIMUM (Keyboard Right GUI)
+  0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
+  0x25, 0x01,                    //   LOGICAL_MAXIMUM (1)
+  0x75, 0x01,                    //   REPORT_SIZE (1)
+  0x95, 0x08,                    //   REPORT_COUNT (8)
+  0x81, 0x02,                    //   INPUT (Data,Var,Abs)
+  0x95, BUFFER_SIZE - 1,         //   REPORT_COUNT (simultaneous keystrokes)
+  0x75, 0x08,                    //   REPORT_SIZE (8)
+  0x25, 0x65,                    //   LOGICAL_MAXIMUM (101)
+  0x19, 0x00,                    //   USAGE_MINIMUM (Reserved (no event indicated))
+  0x29, 0x65,                    //   USAGE_MAXIMUM (Keyboard Application)
+  0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
+  0xc0                           // END_COLLECTION
 };
 
 
@@ -126,8 +132,8 @@ PROGMEM char usbHidReportDescriptor[35] = { /* USB report descriptor */
 
 
 class UsbKeyboardDevice {
- public:
-  UsbKeyboardDevice () {
+public:
+  UsbKeyboardDevice() {
     PORTD = 0; // TODO: Only for USB pins?
     DDRD |= ~USBMASK;
 
@@ -137,36 +143,36 @@ class UsbKeyboardDevice {
 
 
     usbInit();
-      
+
     sei();
 
     // TODO: Remove the next two lines once we fix
     //       missing first keystroke bug properly.
-    memset(reportBuffer, 0, sizeof(reportBuffer));      
+    memset(reportBuffer, 0, sizeof(reportBuffer));
     usbSetInterrupt(reportBuffer, sizeof(reportBuffer));
   }
-    
+
   void update() {
     usbPoll();
   }
-    
+
   void sendKeyStroke(byte keyStroke) {
     sendKeyStroke(keyStroke, 0);
   }
 
   void sendKeyStroke(byte keyStroke, byte modifiers) {
-      
+
     while (!usbInterruptIsReady()) {
       // Note: We wait until we can send keystroke
       //       so we know the previous keystroke was
       //       sent.
     }
-      
+
     memset(reportBuffer, 0, sizeof(reportBuffer));
 
     reportBuffer[0] = modifiers;
     reportBuffer[1] = keyStroke;
-        
+
     usbSetInterrupt(reportBuffer, sizeof(reportBuffer));
 
     while (!usbInterruptIsReady()) {
@@ -174,13 +180,13 @@ class UsbKeyboardDevice {
       //       so we know the previous keystroke was
       //       sent.
     }
-      
+
     // This stops endlessly repeating keystrokes:
-    memset(reportBuffer, 0, sizeof(reportBuffer));      
+    memset(reportBuffer, 0, sizeof(reportBuffer));
     usbSetInterrupt(reportBuffer, sizeof(reportBuffer));
 
   }
-    
+
   //private: TODO: Make friend?
   uchar    reportBuffer[4];    // buffer for HID reports [ 1 modifier byte + (len-1) key strokes]
 
@@ -189,32 +195,32 @@ class UsbKeyboardDevice {
 UsbKeyboardDevice UsbKeyboard = UsbKeyboardDevice();
 
 #ifdef __cplusplus
-extern "C"{
-#endif 
+extern "C" {
+#endif
   // USB_PUBLIC uchar usbFunctionSetup
-uchar usbFunctionSetup(uchar data[8]) 
+  uchar usbFunctionSetup(uchar data[8])
   {
-    usbRequest_t    *rq = (usbRequest_t *)((void *)data);
+    usbRequest_t*    rq = (usbRequest_t*)((void*)data);
 
     usbMsgPtr = UsbKeyboard.reportBuffer; //
-    if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS){
+    if ((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS) {
       /* class request type */
 
-      if(rq->bRequest == USBRQ_HID_GET_REPORT){
-	/* wValue: ReportType (highbyte), ReportID (lowbyte) */
+      if (rq->bRequest == USBRQ_HID_GET_REPORT) {
+        /* wValue: ReportType (highbyte), ReportID (lowbyte) */
 
-	/* we only have one report type, so don't look at wValue */
-        // TODO: Ensure it's okay not to return anything here?    
-	return 0;
+        /* we only have one report type, so don't look at wValue */
+        // TODO: Ensure it's okay not to return anything here?
+        return 0;
 
-      }else if(rq->bRequest == USBRQ_HID_GET_IDLE){
-	//            usbMsgPtr = &idleRate;
-	//            return 1;
-	return 0;
-      }else if(rq->bRequest == USBRQ_HID_SET_IDLE){
-	idleRate = rq->wValue.bytes[1];
+      } else if (rq->bRequest == USBRQ_HID_GET_IDLE) {
+        //            usbMsgPtr = &idleRate;
+        //            return 1;
+        return 0;
+      } else if (rq->bRequest == USBRQ_HID_SET_IDLE) {
+        idleRate = rq->wValue.bytes[1];
       }
-    }else{
+    } else {
       /* no vendor specific requests implemented */
     }
     return 0;
